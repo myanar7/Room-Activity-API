@@ -3,8 +3,10 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
@@ -206,8 +208,9 @@ public class NewTest {
                         if (statusCode != 403) {
                             System.out.println("Document found successfully");
                             statusCode = 200;
+                            ObjectId reservationId = new ObjectId();
                             Document document1 = new Document("name", name).append("day", day).append("hour", hour)
-                                    .append("duration", duration);
+                                    .append("duration", duration).append("reservation_id", reservationId);
                             collection.insertOne(document1);
                             response = "Room has been reserved : " + name;
                         }
@@ -276,6 +279,7 @@ public class NewTest {
                 out.println(response);
                 }
             }
+            mongoClient.close();
             clientSocket.close();
         }
     }
