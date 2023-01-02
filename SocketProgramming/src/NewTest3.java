@@ -168,7 +168,7 @@ public class NewTest3 {
                     }
                 }
                 int statusCode = 500;
-                String response = "ERROR";
+                String response = "";
 
                 if (!day.equals("")) {
                     Socket roomSocket = new Socket("localhost", 8081);
@@ -217,7 +217,7 @@ public class NewTest3 {
                                 roomIn.readLine();
                                 roomIn.readLine();
                                 roomIn.readLine();
-                                response += roomIn.readLine() + "\n";
+                                response += roomIn.readLine() + "<br>";
                             } else if (roomResponse[1].equals("404")) {
                                 System.out.println("No Such Room Exists");
                                 statusCode = 404;
