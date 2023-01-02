@@ -249,8 +249,8 @@ public class NewTest3 {
                         id = pair[1];
                     }
                 }
-                int statusCode = 500;
-                String response = "ERROR";
+                int statusCode = 0;
+                String response = "";
                 System.out.println("Connected to the MongoClient successfully");
                 MongoCollection<Document> collection = database.getCollection("reservation");
                 ObjectId objectId = new ObjectId(id);
@@ -265,6 +265,9 @@ public class NewTest3 {
                         statusCode = 404;
                         response = "Reservation does not exist";
                     }
+                } else {
+                    statusCode = 500;
+                    response = "Error";
                 }
                 // Send the response to the client
                 out.println("HTTP/1.1 " + statusCode);

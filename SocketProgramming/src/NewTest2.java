@@ -166,7 +166,7 @@ public class NewTest2 {
                         response = "Activity " + name + " is available";
                     } else {
                         System.out.println("Document not found");
-                        statusCode = 403;
+                        statusCode = 404;
                         response = "Activity does not exist";
                     }
                 }
