@@ -1,3 +1,7 @@
+// Author: Mustafa Yanar, Emir Said Haliloğlu, Yiğit Göksel
+// Date: 12/12/2020
+// Computer Network Project : Reservation Server
+
 import java.io.*;
 import java.net.*;
 
@@ -11,11 +15,11 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
-public class NewTest3 {
+public class ReservationServer {
 
     public static void main(String[] args) throws Exception {
         // Set the port number
-        int port = 8083;
+        int port = 8082;
 
         // Create a ServerSocket to listen for client connections
         ServerSocket serverSocket = new ServerSocket(port);
@@ -80,12 +84,13 @@ public class NewTest3 {
             MongoDatabase database = mongoClient.getDatabase("network");
             System.out.println("Connected to the MongoDatabase successfully");
 
-            if (endpoint.equals("reserve")) {
+            if (endpoint.equals("reserve")) { // Reserve a room
                 String name = "";
                 String activity = "";
                 String day = "";
                 String hour = "";
                 String duration = "";
+                // Parse the request parameters
                 for (String param : params) {
                     String[] pair = param.split("=");
                     if (pair[0].equals("room")) {
@@ -103,46 +108,50 @@ public class NewTest3 {
                 }
                 int statusCode = 500;
                 String response = "Received request to: " + activity;
-                Socket activitySocket = new Socket("localhost", 8082);
+                // Check if the activity exists
+                Socket activitySocket = new Socket("localhost", 8081);
                 BufferedReader activityIn = new BufferedReader(new InputStreamReader(activitySocket.getInputStream()));
                 PrintWriter activityOut = new PrintWriter(activitySocket.getOutputStream(), true);
+                // Send the request to the activity server
                 activityOut.println("GET /check?name=" + activity + " HTTP/1.1");
                 // activityResponses[0] = "HTTP/1.1" activityResponses[1] = "200" etc.
                 String[] activityResponse = activityIn.readLine().split(" ");
-
-                if (activityResponse.length == 2) {
-                    if (activityResponse[1].equals("200")) {
-                        Socket roomSocket = new Socket("localhost", 8081);
+ 
+                if (activityResponse.length == 2) { // If the response is valid
+                    if (activityResponse[1].equals("200")) { // If the activity exists
+                        // Check if the room exists
+                        Socket roomSocket = new Socket("localhost", 8080);
                         BufferedReader roomIn = new BufferedReader(new InputStreamReader(roomSocket.getInputStream()));
                         PrintWriter roomOut = new PrintWriter(roomSocket.getOutputStream(), true);
+                        // Send the request to the room server
                         roomOut.println("GET /reserve?name=" + name + "&day=" + day + "&hour=" + hour + "&duration="
                                 + duration + " HTTP/1.1");
                         String[] roomResponse = roomIn.readLine().split(" ");
 
-                        if (roomResponse.length == 2) {
-                            if (roomResponse[1].equals("200")) {
+                        if (roomResponse.length == 2) { // If the response is valid
+                            if (roomResponse[1].equals("200")) { // If the room exists
                                 statusCode = 200;
                                 response = "Reservation successful";
-                            } else if (roomResponse[1].equals("403")) {
+                            } else if (roomResponse[1].equals("403")) { // If the room is already reserved
                                 System.out.println("Room is already reserved");
                                 statusCode = 403;
                                 response = "Room does not exist";
-                            } else if (roomResponse[1].equals("400")) {
+                            } else if (roomResponse[1].equals("400")) { // If the room does not exist
                                 System.out.println("Invalid Input");
                                 statusCode = 400;
                                 response = "Invalid Input";
                             }
-                        } else {
+                        } else { // If the response is invalid
                             System.out.println("Something went wrong with the room server");
                             statusCode = 500;
                             response = "Server Error Line:139";
                         }
                         roomSocket.close();
-                    } else if (activityResponse[1].equals("404")) {
+                    } else if (activityResponse[1].equals("404")) { // If the activity does not exist
                         statusCode = 404;
                         response = "Activity does not exist";
                     }
-                } else {
+                } else { // If the response is invalid
                     System.out.println("Something went wrong with the activity server");
                     statusCode = 500;
                     response = "Server Error Line:149";
@@ -155,9 +164,10 @@ public class NewTest3 {
                 out.println("Content-Length: " + response.length());
                 out.println();
                 out.println(response);
-            } else if (endpoint.equals("listavailability")) {
+            } else if (endpoint.equals("listavailability")) { // List the availability of a room
                 String room = "";
                 String day = "";
+                // Parse the request parameters
                 for (String param : params) {
                     String[] pair = param.split("=");
                     if (pair[0].equals("room")) {
@@ -169,65 +179,68 @@ public class NewTest3 {
                 }
                 int statusCode = 500;
                 String response = "";
-
-                if (!day.equals("")) {
-                    Socket roomSocket = new Socket("localhost", 8081);
+                // Check if the room is available for the given day
+                if (!day.equals("") && Integer.parseInt(day) > 0 && Integer.parseInt(day) < 8) {
+                    Socket roomSocket = new Socket("localhost", 8080);
                     BufferedReader roomIn = new BufferedReader(new InputStreamReader(roomSocket.getInputStream()));
                     PrintWriter roomOut = new PrintWriter(roomSocket.getOutputStream(), true);
+                    // Send the request to the room server
                     roomOut.println("GET /checkavailability?name=" + room + "&day=" + day + " HTTP/1.1");
                     String[] roomResponse = roomIn.readLine().split(" ");
 
                     System.out.println("Received request to list availability for: " + room);
-                    if (roomResponse.length == 2) {
+                    if (roomResponse.length == 2) { // If the response is valid
                         if (roomResponse[1].equals("200")) {
                             statusCode = 200;
                             roomIn.readLine();
                             roomIn.readLine();
                             roomIn.readLine();
+                            // Get the availability of the room
                             response = roomIn.readLine();
-                        } else if (roomResponse[1].equals("404")) {
+                        } else if (roomResponse[1].equals("404")) { // If the room does not exist
                             System.out.println("No Such Room Exists");
                             statusCode = 404;
                             response = "No Such Room Exists";
-                        } else if (roomResponse[1].equals("400")) {
+                        } else if (roomResponse[1].equals("400")) { // If the room does not exist
                             System.out.println("Invalid Input");
                             statusCode = 400;
                             response = "Invalid Input";
                         }
-                    } else {
+                    } else { // If the response is invalid
                         System.out.println("Something went wrong with the room server");
                         statusCode = 500;
                         response = "Server Error Line:201";
                     }
                     roomSocket.close();
-                } else {
-                    for (int i = 1; i < 8; i++) {
+                } else { // If the day is invalid
+                    for (int i = 1; i < 8; i++) { // Check the availability of the room for each day
                         day = Integer.toString(i);
-                        Socket roomSocket = new Socket("localhost", 8081);
+                        Socket roomSocket = new Socket("localhost", 8080);
                         BufferedReader roomIn = new BufferedReader(new InputStreamReader(roomSocket.getInputStream()));
                         PrintWriter roomOut = new PrintWriter(roomSocket.getOutputStream(), true);
+                        // Send the request to the room server
                         roomOut.println("GET /checkavailability?name=" + room + "&day=" + day + " HTTP/1.1");
                         String[] roomResponse = roomIn.readLine().split(" ");
 
                         System.out.println("Received request to list availability for: " + room);
 
-                        if (roomResponse.length == 2) {
+                        if (roomResponse.length == 2) { // If the response is valid
                             if (roomResponse[1].equals("200")) {
                                 statusCode = 200;
                                 roomIn.readLine();
                                 roomIn.readLine();
                                 roomIn.readLine();
-                                response += roomIn.readLine() + "<br>";
-                            } else if (roomResponse[1].equals("404")) {
+                                response += roomIn.readLine() + "<br>"; // Get the availability of the room
+                            } else if (roomResponse[1].equals("404")) { // If the room does not exist
                                 System.out.println("No Such Room Exists");
                                 statusCode = 404;
                                 response = "No Such Room Exists";
-                            } else if (roomResponse[1].equals("400")) {
+                            } else if (roomResponse[1].equals("400")) { // If the room does not exist
                                 System.out.println("Invalid Input");
                                 statusCode = 400;
                                 response = "Invalid Input";
                             }
-                        } else {
+                        } else { // If the response is invalid
                             System.out.println("Something went wrong with the room server");
                             statusCode = 500;
                             response = "Server Error Line:234";
@@ -243,6 +256,7 @@ public class NewTest3 {
                 out.println(response);
             } else if (endpoint.equals("display")) {
                 String id = "";
+                // Parse the request parameters
                 for (String param : params) {
                     String[] pair = param.split("=");
                     if (pair[0].equals("id")) {
@@ -255,12 +269,12 @@ public class NewTest3 {
                 MongoCollection<Document> collection = database.getCollection("reservation");
                 ObjectId objectId = new ObjectId(id);
                 Document document = new Document("reservation_id", objectId);
-                if (!id.equals("")) {
-                    if (collection.find(document).first() != null) {
+                if (!id.equals("")) { // If the id is valid
+                    if (collection.find(document).first() != null) { // If the reservation exists
                         System.out.println("Document found successfully");
                         statusCode = 200;
                         response = collection.find(document).first().toJson();
-                    } else {
+                    } else { // If the reservation does not exist
                         System.out.println("Document not found");
                         statusCode = 404;
                         response = "Reservation does not exist";
@@ -276,6 +290,7 @@ public class NewTest3 {
                 out.println();
                 out.println(response);
             }
+            // Close the connection
             mongoClient.close();
             clientSocket.close();
         }
